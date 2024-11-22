@@ -9,6 +9,7 @@ out_file="$1"
 extension="$2"
 dir="$3"
 
+
 if [[ ! -d "$dir" ]]; then
     echo " Directory: "$dir" unavailable or does not exist " 
     exit 1
