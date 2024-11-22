@@ -9,6 +9,11 @@ out_file="$1"
 extension="$2"
 dir="$3"
 
+if [ -z "$out_file" ]  [ -z "$extension" ]  [ -z "$dir" ]; then
+    echo "Error: One or more arguments are empty."
+    exit 1
+fi
+
 if [[ ! -d "$dir" ]]; then
     echo " Directory: "$dir" unavailable or does not exist " 
     exit 1
