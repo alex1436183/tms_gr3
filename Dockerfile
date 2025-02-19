@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install Flask pytest
 
 # Открываем порт (если приложение слушает другой порт, поменяй)
-EXPOSE 5000
+EXPOSE 5050
 
 # Запускаем приложение
 CMD ["python", "app.py"]
