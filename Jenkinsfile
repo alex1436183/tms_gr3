@@ -4,10 +4,8 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
-        DEPLOY_SERVER = 'minion'  
-        DEPLOY_DIR = '/var/www/myapp'
+        VENV_DIR = 'venv'
         IMAGE_NAME = 'myapp-image'
-        CONTAINER_NAME = 'myapp-container'
     }
 
     stages {
@@ -24,6 +22,7 @@ pipeline {
                 sh '''#!/bin/bash
                 echo "Building Docker image..."
                 docker build -t ${IMAGE_NAME} .
+                echo "Docker image built successfully!"
                 '''
             }
         }
@@ -37,53 +36,22 @@ pipeline {
             }
         }
 
-        stage('Push Docker Image to Registry') {
+        stage('Run Application in Docker') {
             steps {
-                withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKER_TOKEN')]) {
-                    sh '''#!/bin/bash
-                    echo "Logging into Docker Hub..."
-                    echo "$DOCKER_TOKEN" | docker login -u "your_dockerhub_username" --password-stdin
-                    docker tag ${IMAGE_NAME} your_dockerhub_username/${IMAGE_NAME}:latest
-                    docker push your_dockerhub_username/${IMAGE_NAME}:latest
-                    '''
-                }
-            }
-        }
-
-        stage('Deploy to Server') {
-            steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
-                    sh '''#!/bin/bash
-                    echo "Deploying project files to ${DEPLOY_SERVER}..."
-                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "mkdir -p ${DEPLOY_DIR}"
-                    rsync -avz -e "ssh -i $SSH_KEY" . jenkins@${DEPLOY_SERVER}:${DEPLOY_DIR}/
-                    echo "Deployment completed!"
-                    '''
-                }
-            }
-        }
-
-        stage('Run Docker Container on Server') {
-            steps {
-                withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
-                    sh '''#!/bin/bash
-                    echo "Starting Docker container on remote server..."
-                    ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
-                        docker stop ${CONTAINER_NAME} || true &&
-                        docker rm ${CONTAINER_NAME} || true &&
-                        docker pull your_dockerhub_username/${IMAGE_NAME}:latest &&
-                        docker run -d --name ${CONTAINER_NAME} -p 5000:5000 your_dockerhub_username/${IMAGE_NAME}:latest
-                    '"
-                    echo "Application deployed and running on ${DEPLOY_SERVER}!"
-                    '''
-                }
+                sh '''#!/bin/bash
+                echo "Starting application inside Docker container on port 5050..."
+                docker run -d -p 5050:5050 ${IMAGE_NAME}
+                echo "Application started inside Docker container!"
+                '''
             }
         }
     }
 
     post {
         always {
-            echo "Cleaning up workspace..."
+            sh '''#!/bin/bash
+            echo "Cleaning up..."
+            '''
         }
         failure {
             echo '❌ Pipeline failed! Check logs for details.'
