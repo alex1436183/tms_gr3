@@ -4,9 +4,10 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
-        VENV_DIR = 'venv'
-        DEPLOY_SERVER = 'minion'  // Имя хоста сервера
-        DEPLOY_DIR = '/var/www/myapp'  // Установлен путь к директории деплоя
+        DEPLOY_SERVER = 'minion'  
+        DEPLOY_DIR = '/var/www/myapp'
+        IMAGE_NAME = 'myapp-image'
+        CONTAINER_NAME = 'myapp-container'
     }
 
     stages {
@@ -18,31 +19,34 @@ pipeline {
             }
         }
 
-        stage('Setup Python Environment') {
+        stage('Build Docker Image') {
             steps {
                 sh '''#!/bin/bash
-                echo "Setting up Python virtual environment..."
-                python3 -m venv ${VENV_DIR}
-                source ${VENV_DIR}/bin/activate
-                python --version
-                pip install --upgrade pip
-                echo "Installing Flask..."
-                pip install Flask
-                echo "Installing pytest..."
-                pip install pytest
-                echo "Python environment setup completed!"
+                echo "Building Docker image..."
+                docker build -t ${IMAGE_NAME} .
                 '''
             }
         }
 
-        stage('Run Tests') {
+        stage('Run Tests in Docker') {
             steps {
                 sh '''#!/bin/bash
-                echo "Running tests..."
-                source ${VENV_DIR}/bin/activate
-                pytest tests/ --maxfail=1 --disable-warnings || echo "Tests failed!"
-                echo "Tests completed."
+                echo "Running tests inside Docker container..."
+                docker run --rm ${IMAGE_NAME} pytest tests/ --maxfail=1 --disable-warnings
                 '''
+            }
+        }
+
+        stage('Push Docker Image to Registry') {
+            steps {
+                withCredentials([string(credentialsId: 'dockerhub-token', variable: 'DOCKER_TOKEN')]) {
+                    sh '''#!/bin/bash
+                    echo "Logging into Docker Hub..."
+                    echo "$DOCKER_TOKEN" | docker login -u "your_dockerhub_username" --password-stdin
+                    docker tag ${IMAGE_NAME} your_dockerhub_username/${IMAGE_NAME}:latest
+                    docker push your_dockerhub_username/${IMAGE_NAME}:latest
+                    '''
+                }
             }
         }
 
@@ -59,22 +63,18 @@ pipeline {
             }
         }
 
-        stage('Start Application') {
+        stage('Run Docker Container on Server') {
             steps {
                 withCredentials([sshUserPrivateKey(credentialsId: 'agent-ssh-key', keyFileVariable: 'SSH_KEY')]) {
                     sh '''#!/bin/bash
-                    echo "Running the start_app script to start the application on the minion server..."
+                    echo "Starting Docker container on remote server..."
                     ssh -i "$SSH_KEY" jenkins@${DEPLOY_SERVER} "bash -c '
-                        export DEPLOY_DIR=${DEPLOY_DIR} && 
-                        export VENV_DIR=${VENV_DIR} && 
-                        cd ${DEPLOY_DIR} && 
-                        echo \"Running start_app script...\" &&
-                        source ${VENV_DIR}/bin/activate &&  # Активируем виртуальное окружение
-                        nohup bash ${DEPLOY_DIR}/start_app.sh > ${DEPLOY_DIR}/app.log 2>&1 & 
-                        echo $! > ${DEPLOY_DIR}/app.pid &&
-                        echo \"Application started with PID $(cat ${DEPLOY_DIR}/app.pid)\" &&
-                        tail -n 10 ${DEPLOY_DIR}/app.log
+                        docker stop ${CONTAINER_NAME} || true &&
+                        docker rm ${CONTAINER_NAME} || true &&
+                        docker pull your_dockerhub_username/${IMAGE_NAME}:latest &&
+                        docker run -d --name ${CONTAINER_NAME} -p 5000:5000 your_dockerhub_username/${IMAGE_NAME}:latest
                     '"
+                    echo "Application deployed and running on ${DEPLOY_SERVER}!"
                     '''
                 }
             }
@@ -83,12 +83,7 @@ pipeline {
 
     post {
         always {
-            sh '''#!/bin/bash
-            echo "Cleaning up..."
-            # Очистка виртуального окружения отключена, чтобы приложение продолжало работать
-            echo "Cleaning up virtual environment..." 
-            # Виртуальное окружение оставляем нетронутым
-            '''
+            echo "Cleaning up workspace..."
         }
         failure {
             echo '❌ Pipeline failed! Check logs for details.'
