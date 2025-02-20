@@ -52,27 +52,23 @@ pipeline {
             }
         }
 
-        stage('Deploy Application') {
-            stages {
-                stage('Stop and Remove Old Container') {
-                    steps {
-                        sh '''
-                        echo "Stopping and removing old container..."
-                        docker stop myapp-container || true
-                        docker rm -f myapp-container || true
-                        '''
-                    }
-                }
+        stage('Stop and Remove Old Container') {
+            steps {
+                sh '''
+                echo "Stopping and removing old container..."
+                docker stop myapp-container || true
+                docker rm -f myapp-container || true
+                '''
+            }
+        }
 
-                stage('Run Application in Docker') {
-                    steps {
-                        sh '''
-                        echo "Starting application inside Docker container on port 5050..."
-                        docker run -d -p 5050:5050 --name myapp-container myapp-image
-                        echo "Application started!"
-                        '''
-                    }
-                }
+        stage('Run Application in Docker') {
+            steps {
+                sh '''
+                echo "Starting application inside Docker container on port 5050..."
+                docker run -d -p 5050:5050 --name myapp-container myapp-image
+                echo "Application started!"
+                '''
             }
         }
     }
