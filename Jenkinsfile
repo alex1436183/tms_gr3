@@ -17,9 +17,19 @@ pipeline {
             }
         }
 
+        stage('Check Directory') {
+            steps {
+                sh '''#!/bin/bash
+                echo "Listing files in current directory after cloning repo:"
+                ls -l
+                '''
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 sh '''#!/bin/bash
+                echo "Current directory before Docker build: $(pwd)"
                 echo "Building Docker image..."
                 docker build -t ${IMAGE_NAME} .
                 echo "Docker image built successfully!"
@@ -54,10 +64,4 @@ pipeline {
             '''
         }
         failure {
-            echo '❌ Pipeline failed! Check logs for details.'
-        }
-        success {
-            echo '✅ Pipeline completed successfully!'
-        }
-    }
-}
+            echo '❌ Pipeline failed! Check logs f
