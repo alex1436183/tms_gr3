@@ -9,29 +9,29 @@ pipeline {
     }
 
     stages {
-        stage('Prepare') {
+        stage('Clone repository') {
+            steps {
+                cleanWs()
+                echo "Cloning repository from ${REPO_URL}"
+                git branch: "${BRANCH_NAME}", url: "${REPO_URL}"
+            }
+        }
+
+        stage('Build and Test') {
             parallel {
-                stage('Clone repository') {
-                    steps {
-                        cleanWs()
-                        echo "Cloning repository from ${REPO_URL}"
-                        git branch: "${BRANCH_NAME}", url: "${REPO_URL}"
-                    }
-                }
                 stage('Build Docker Image') {
                     steps {
                         sh '''
+                        echo "Checking current directory before build..."
+                        pwd
+                        ls -la
+
                         echo "Building Docker image..."
                         docker build -f Dockerfile -t myapp-image .
                         echo "Docker image built successfully!"
                         '''
                     }
                 }
-            }
-        }
-
-        stage('Test and Deploy') {
-            parallel {
                 stage('Run Tests in Docker') {
                     steps {
                         sh '''
@@ -40,27 +40,28 @@ pipeline {
                         '''
                     }
                 }
-                stage('Deploy Application') {
-                    stages {
-                        stage('Stop and Remove Old Container') {
-                            steps {
-                                sh '''
-                                echo "Stopping and removing old container..."
-                                docker stop myapp-container || true
-                                docker rm -f myapp-container || true
-                                '''
-                            }
-                        }
+            }
+        }
 
-                        stage('Run Application in Docker') {
-                            steps {
-                                sh '''
-                                echo "Starting application inside Docker container on port 5050..."
-                                docker run -d -p 5050:5050 --name myapp-container myapp-image
-                                echo "Application started!"
-                                '''
-                            }
-                        }
+        stage('Deploy Application') {
+            stages {
+                stage('Stop and Remove Old Container') {
+                    steps {
+                        sh '''
+                        echo "Stopping and removing old container..."
+                        docker stop myapp-container || true
+                        docker rm -f myapp-container || true
+                        '''
+                    }
+                }
+
+                stage('Run Application in Docker') {
+                    steps {
+                        sh '''
+                        echo "Starting application inside Docker container on port 5050..."
+                        docker run -d -p 5050:5050 --name myapp-container myapp-image
+                        echo "Application started!"
+                        '''
                     }
                 }
             }
