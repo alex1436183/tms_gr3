@@ -4,7 +4,6 @@ pipeline {
     environment {
         REPO_URL = 'https://github.com/alex1436183/tms_test.git'
         BRANCH_NAME = 'main'
-        VENV_DIR = 'venv'
         IMAGE_NAME = 'myapp-image'
         CONTAINER_NAME = 'myapp-container'
     }
@@ -21,7 +20,7 @@ pipeline {
                 }
                 stage('Build Docker Image') {
                     steps {
-                        sh '''#!/bin/bash
+                        sh '''
                         echo "Building Docker image..."
                         docker build -f Dockerfile -t myapp-image .
                         echo "Docker image built successfully!"
@@ -31,11 +30,11 @@ pipeline {
             }
         }
 
-        stage('Run Tests and Deployment') {
+        stage('Test and Deploy') {
             parallel {
                 stage('Run Tests in Docker') {
                     steps {
-                        sh '''#!/bin/bash
+                        sh '''
                         echo "Running tests inside Docker container..."
                         docker run --rm myapp-image pytest tests/ --maxfail=1 --disable-warnings
                         '''
@@ -45,7 +44,7 @@ pipeline {
                     stages {
                         stage('Stop and Remove Old Container') {
                             steps {
-                                sh '''#!/bin/bash
+                                sh '''
                                 echo "Stopping and removing old container..."
                                 docker stop myapp-container || true
                                 docker rm -f myapp-container || true
@@ -55,7 +54,7 @@ pipeline {
 
                         stage('Run Application in Docker') {
                             steps {
-                                sh '''#!/bin/bash
+                                sh '''
                                 echo "Starting application inside Docker container on port 5050..."
                                 docker run -d -p 5050:5050 --name myapp-container myapp-image
                                 echo "Application started!"
@@ -76,8 +75,8 @@ pipeline {
             echo 'Build was successful!'
             emailext(
                 subject: "Jenkins Job SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "<p>Jenkins job <b>${env.JOB_NAME}</b> (<b>${env.BUILD_NUMBER}</b>) успешно выполнен!</p>
-                       <p>Проверить можно тут: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>",
+                body: "<p>Jenkins job <b>${env.JOB_NAME}</b> (<b>${env.BUILD_NUMBER}</b>) успешно выполнен!</p>" +
+                      "<p>Проверить можно тут: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>",
                 to: 'alex1436183@gmail.com',
                 mimeType: 'text/html',
                 attachmentsPattern: 'reports/report.html'
@@ -87,8 +86,8 @@ pipeline {
             echo 'Build failed!'
             emailext(
                 subject: "Jenkins Job FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: "<p>Jenkins job <b>${env.JOB_NAME}</b> (<b>${env.BUILD_NUMBER}</b>) завершился с ошибкой!</p>
-                       <p>Логи можно посмотреть тут: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>",
+                body: "<p>Jenkins job <b>${env.JOB_NAME}</b> (<b>${env.BUILD_NUMBER}</b>) завершился с ошибкой!</p>" +
+                      "<p>Логи можно посмотреть тут: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>",
                 to: 'alex1436183@gmail.com',
                 mimeType: 'text/html',
                 attachmentsPattern: 'reports/report.html'
