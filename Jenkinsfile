@@ -64,4 +64,10 @@ pipeline {
             '''
         }
         failure {
-            echo '❌ Pipeline failed! Check logs f
+            echo '❌ Pipeline failed! Check logs for details.'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
+        }
+    }
+}
