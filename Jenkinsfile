@@ -6,6 +6,9 @@ pipeline {
         BRANCH_NAME = 'main'
         VENV_DIR = 'venv'
         IMAGE_NAME = 'myapp-image'
+        CONTAINER_NAME = 'myapp-container'
+        HOST_PORT = '5051'  // Используем другой порт для избежания конфликта
+        CONTAINER_PORT = '5050'  // Порт внутри контейнера
     }
 
     stages {
@@ -42,10 +45,10 @@ pipeline {
         stage('Stop and Remove Old Container') {
             steps {
                 sh '''#!/bin/bash
-                if [ $(docker ps -q -f name=myapp-container) ]; then
+                if [ $(docker ps -q -f name=${CONTAINER_NAME}) ]; then
                     echo "Stopping and removing old container..."
-                    docker stop myapp-container || true
-                    docker rm myapp-container || true
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm -f ${CONTAINER_NAME} || true
                 fi
                 '''
             }
@@ -54,8 +57,8 @@ pipeline {
         stage('Run Application in Docker') {
             steps {
                 sh '''#!/bin/bash
-                echo "Starting application inside Docker container on port 5050..."
-                docker run -d -p 5050:5050 --name myapp-container ${IMAGE_NAME}
+                echo "Starting application inside Docker container on port ${HOST_PORT}..."
+                docker run -d -p ${HOST_PORT}:${CONTAINER_PORT} --name ${CONTAINER_NAME} ${IMAGE_NAME}
                 echo "Application started inside Docker container!"
                 '''
             }
