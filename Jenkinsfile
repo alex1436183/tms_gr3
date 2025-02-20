@@ -2,7 +2,7 @@ pipeline {
     agent { label 'minion' }
 
     environment {
-        REPO_URL = 'https://github.com/alex1436183/tms_test.git'
+        REPO_URL = 'https://github.com/alex1436183/tms_gr3.git'
         BRANCH_NAME = 'main'
         VENV_DIR = 'venv'
         IMAGE_NAME = 'myapp-image'
