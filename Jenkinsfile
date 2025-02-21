@@ -20,10 +20,6 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 sh '''
-                echo "Checking current directory before build..."
-                pwd
-                ls -la
-
                 echo "Building Docker image..."
                 docker build -f Dockerfile -t myapp-image .
                 echo "Docker image built successfully!"
