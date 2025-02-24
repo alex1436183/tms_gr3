@@ -81,7 +81,6 @@ pipeline {
                       "<p>Проверить можно тут: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>",
                 to: 'alex1436183@gmail.com',
                 mimeType: 'text/html',
-                attachmentsPattern: 'reports/report.html'
             )
         }
         failure {
@@ -92,7 +91,6 @@ pipeline {
                       "<p>Логи можно посмотреть тут: <a href='${env.BUILD_URL}'>${env.BUILD_URL}</a></p>",
                 to: 'alex1436183@gmail.com',
                 mimeType: 'text/html',
-                attachmentsPattern: 'reports/report.html'
             )
         }
     }
